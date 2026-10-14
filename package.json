@@ -1,7 +1,7 @@
 {
   "name": "faculty-booking",
   "version": "1.0.0",
-  "description": "Faculink — Faculty Consultation Booking System",
+  "description": "Faculink - Faculty Consultation Booking System",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -182,7 +182,12 @@ img { max-width: 100%; display: block; }
     color: #fff;
     box-shadow: var(--shadow-sm);
 }
-.btn-primary:hover { background: var(--navy); color: #fff; }
+
+.btn-primary:hover {
+    background: #21456f;
+    color: #fff;
+    box-shadow: var(--shadow-md);
+}
 
 .btn-ghost {
     background: transparent;

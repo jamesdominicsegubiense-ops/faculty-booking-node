@@ -9,7 +9,7 @@ A web-based consultation booking platform for universities built with **Node.js 
 | Name | Role | GitHub |
 |------|------|--------|
 | James Dominic Segubiense | Lead Developer — Frontend, Backend, Database, Auth, UI/UX, CSS, JS| [@jamesdominicsegubiense-ops](https://github.com/jamesdominicsegubiense-ops) |
-| Charlotte Montion | Frontend — UI/UX, CSS, JS | @chmontion-art(https://github.com/@chmontion-art) |
+| Charlotte Montion | Frontend — UI/UX, CSS, JS | [@chmontion-art](https://github.com/@chmontion-art) |
 | Ej Alberto | QA / Documentation — Testing, Reports | [@member3username](https://github.com/member3username) |
 
 ---

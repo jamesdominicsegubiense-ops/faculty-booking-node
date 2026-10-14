@@ -161,4 +161,73 @@ router.get('/faculty-report', async (req, res) => {
     res.render('admin-report', { title: 'Faculty Report', rows, totals, from, to });
 });
 
+/* ---------- EXPORT FACULTY REPORT AS CSV ---------- */
+router.get('/faculty-report/export', async (req, res) => {
+    const from = req.query.from || '';
+    const to = req.query.to || '';
+
+    let dateWhere = '';
+    const params = [];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(from)) { dateWhere += ' AND b.booking_date >= ?'; params.push(from); }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(to))   { dateWhere += ' AND b.booking_date <= ?'; params.push(to); }
+
+    const [rows] = await pool.query(`
+        SELECT u.full_name, u.email, p.department, p.consultation_mode,
+               COUNT(b.id) AS total_requests,
+               SUM(CASE WHEN b.status='Pending'   THEN 1 ELSE 0 END) AS pending_count,
+               SUM(CASE WHEN b.status='Approved'  THEN 1 ELSE 0 END) AS approved_count,
+               SUM(CASE WHEN b.status='Completed' THEN 1 ELSE 0 END) AS completed_count,
+               SUM(CASE WHEN b.status='Declined'  THEN 1 ELSE 0 END) AS declined_count,
+               MAX(CASE WHEN b.status='Completed' THEN b.booking_date END) AS last_consultation
+        FROM users u
+        INNER JOIN faculty_profiles p ON p.user_id = u.id
+        LEFT JOIN bookings b ON b.faculty_id = u.id ${dateWhere}
+        WHERE u.role = 'faculty'
+        GROUP BY u.id, u.full_name, u.email, p.department, p.consultation_mode
+        ORDER BY completed_count DESC, total_requests DESC, u.full_name
+    `, params);
+
+    // Build CSV content
+    const header = [
+        'Faculty Name',
+        'Email',
+        'Department',
+        'Consultation Mode',
+        'Total Requests',
+        'Pending',
+        'Approved',
+        'Completed',
+        'Declined',
+        'Last Consultation',
+    ];
+
+    const escapeCsv = (val) => {
+        if (val === null || val === undefined) return '';
+        const s = String(val);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+
+    let csv = header.join(',') + '\n';
+    rows.forEach(r => {
+        csv += [
+            escapeCsv(r.full_name),
+            escapeCsv(r.email),
+            escapeCsv(r.department),
+            escapeCsv(r.consultation_mode),
+            r.total_requests,
+            r.pending_count,
+            r.approved_count,
+            r.completed_count,
+            r.declined_count,
+            escapeCsv(r.last_consultation || ''),
+        ].join(',') + '\n';
+    });
+
+    const filename = `faculty-report-${new Date().toISOString().slice(0,10)}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+});
+
 module.exports = router;

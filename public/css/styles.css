@@ -2255,3 +2255,17 @@ textarea { resize: vertical; min-height: 84px; }
         padding-left: 1.5rem !important;   /* resets on mobile */
     }
 }
+
+/* =====================================================================
+   ADMIN — Edit user button
+   ===================================================================== */
+
+.btn-icon-edit {
+    background: #e8efff;
+    color: #1d4ed8;
+    border-color: #c8d7ff;
+}
+.btn-icon-edit:hover {
+    background: #d0e0ff;
+    color: #1a3fa8;
+}

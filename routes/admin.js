@@ -230,4 +230,99 @@ router.get('/faculty-report/export', async (req, res) => {
     res.send(csv);
 });
 
+/* ---------- EDIT USER ---------- */
+router.post('/edit-user', async (req, res) => {
+    const me = req.session.user;
+    const {
+        user_id,
+        full_name,
+        email,
+        role,
+        new_password,
+        department,
+    } = req.body;
+
+    const id = parseInt(user_id, 10);
+    if (!id) {
+        req.flash('error', 'Invalid user ID.');
+        return res.redirect('/admin/dashboard');
+    }
+
+    // Validate
+    const errors = [];
+    if (!full_name || full_name.length > 100) errors.push('Full name is required (max 100).');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Valid email is required.');
+    if (!['student', 'faculty', 'admin'].includes(role)) errors.push('Invalid role.');
+    if (new_password && new_password.length < 8) errors.push('New password must be at least 8 characters.');
+
+    // Check email uniqueness
+    if (!errors.length) {
+        const [dup] = await pool.query('SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1', [email, id]);
+        if (dup.length) errors.push('That email is already used by another user.');
+    }
+
+    // Prevent demoting yourself from admin (avoid locking out)
+    if (id === me.id && role !== 'admin') {
+        errors.push('You cannot change your own role away from admin.');
+    }
+
+    // Prevent demoting the last admin
+    if (role !== 'admin') {
+        const [target] = await pool.query('SELECT role FROM users WHERE id = ? LIMIT 1', [id]);
+        if (target.length && target[0].role === 'admin') {
+            const [[{ c }]] = await pool.query("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'");
+            if (c <= 1) errors.push('Cannot demote the last admin.');
+        }
+    }
+
+    if (errors.length) {
+        req.flash('error', errors.join(' '));
+        return res.redirect('/admin/dashboard');
+    }
+
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // Build update SQL
+        const params = [full_name, email, role];
+        let sql = 'UPDATE users SET full_name = ?, email = ?, role = ?';
+
+        if (new_password && new_password.length >= 8) {
+            const hash = await bcrypt.hash(new_password, 10);
+            sql += ', password_hash = ?';
+            params.push(hash);
+        }
+
+        sql += ' WHERE id = ?';
+        params.push(id);
+
+        await conn.query(sql, params);
+
+        // If faculty: update department if provided
+        if (role === 'faculty' && department) {
+            const [profile] = await conn.query('SELECT id FROM faculty_profiles WHERE user_id = ? LIMIT 1', [id]);
+            if (profile.length) {
+                await conn.query('UPDATE faculty_profiles SET department = ? WHERE user_id = ?', [department, id]);
+            } else {
+                await conn.query(
+                    'INSERT INTO faculty_profiles (user_id, department, bio, consultation_mode) VALUES (?, ?, ?, ?)',
+                    [id, department, 'New faculty member.', 'In-Person']
+                );
+            }
+        }
+
+        await conn.commit();
+        conn.release();
+        req.flash('success', `User "${full_name}" updated successfully.`);
+    } catch (err) {
+        await conn.rollback();
+        conn.release();
+        console.error(err);
+        req.flash('error', 'Could not update user.');
+    }
+
+    res.redirect('/admin/dashboard');
+});
+
 module.exports = router;

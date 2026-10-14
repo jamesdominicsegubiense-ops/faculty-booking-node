@@ -3,86 +3,340 @@
         <div>
             <span class="hero-eyebrow">Administrator</span>
             <h1 class="page-title">Admin dashboard</h1>
+            <p class="page-sub">Manage faculty accounts and monitor system activity.</p>
         </div>
-        <a class="btn btn-primary" href="/admin/faculty-report">📊 View faculty report</a>
+        <a class="btn btn-primary" href="/admin/faculty-report">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/><path d="M7 14l3-3 4 4 6-6"/>
+            </svg>
+            View faculty report
+        </a>
     </div>
 </section>
 
 <div class="stats stats-4">
-    <div class="stat-card"><span class="stat-value"><%= stats.students %></span><span class="stat-label">Students</span></div>
-    <div class="stat-card"><span class="stat-value"><%= stats.faculty %></span><span class="stat-label">Faculty</span></div>
-    <div class="stat-card"><span class="stat-value"><%= stats.admins %></span><span class="stat-label">Admins</span></div>
-    <div class="stat-card"><span class="stat-value"><%= stats.bookings %></span><span class="stat-label">Bookings</span></div>
+    <div class="stat-card stat-students">
+        <div class="stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+        </div>
+        <span class="stat-value"><%= stats.students %></span>
+        <span class="stat-label">Students</span>
+    </div>
+    <div class="stat-card stat-faculty">
+        <div class="stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+        </div>
+        <span class="stat-value"><%= stats.faculty %></span>
+        <span class="stat-label">Faculty</span>
+    </div>
+    <div class="stat-card stat-admins">
+        <div class="stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        </div>
+        <span class="stat-value"><%= stats.admins %></span>
+        <span class="stat-label">Admins</span>
+    </div>
+    <div class="stat-card stat-bookings">
+        <div class="stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+        </div>
+        <span class="stat-value"><%= stats.bookings %></span>
+        <span class="stat-label">Bookings</span>
+    </div>
 </div>
 
 <div class="admin-grid">
+
+    <!-- ============ CREATE FACULTY ============ -->
     <section class="panel">
         <div class="panel-head">
-            <div class="panel-head-icon panel-head-icon-blue">+</div>
-            <div><h2 class="panel-title">Create faculty account</h2></div>
+            <div class="panel-head-icon panel-head-icon-blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="panel-title">Create faculty account</h2>
+                <p class="panel-sub">Faculty members cannot self-register.</p>
+            </div>
         </div>
+
         <form method="post" action="/admin/create-faculty" class="stack">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <label class="field"><span>Full name</span><input type="text" name="full_name" required></label>
-            <label class="field"><span>Email</span><input type="email" name="email" required></label>
-            <label class="field"><span>Temporary password</span><input type="text" name="password" minlength="8" required value="<%= Math.random().toString(36).slice(2,10) %>"></label>
+
+            <label class="field">
+                <span>Full name</span>
+                <input type="text" name="full_name" maxlength="100" required placeholder="e.g. Dr. Jane Smith">
+            </label>
+
+            <label class="field">
+                <span>Email address</span>
+                <input type="email" name="email" maxlength="150" required placeholder="jane.smith@university.edu">
+            </label>
+
+            <label class="field">
+                <span>Temporary password</span>
+                <input type="text" name="password" minlength="8" required value="<%= Math.random().toString(36).slice(2,10) %>">
+                <small class="muted small">Share this with the faculty member.</small>
+            </label>
+
             <label class="field">
                 <span>Department</span>
                 <select name="department" required>
-                    <% departments.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
+                    <% departments.forEach(d => { %>
+                        <option value="<%= d %>"><%= d %></option>
+                    <% }) %>
                 </select>
             </label>
-            <label class="field"><span>Office location</span><input type="text" name="office_location"></label>
+
             <label class="field">
-                <span>Mode</span>
+                <span>Office location <em>(optional)</em></span>
+                <input type="text" name="office_location" maxlength="100" placeholder="e.g. Room 304">
+            </label>
+
+            <label class="field">
+                <span>Consultation mode</span>
                 <select name="consultation_mode">
-                    <option>In-Person</option><option>Online</option><option>Hybrid</option>
+                    <option>In-Person</option>
+                    <option>Online</option>
+                    <option>Hybrid</option>
                 </select>
             </label>
-            <button type="submit" class="btn btn-primary btn-block">+ Create account</button>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Create account
+            </button>
         </form>
     </section>
 
+    <!-- ============ USER LIST ============ -->
     <section class="panel">
         <div class="panel-head">
-            <div class="panel-head-icon panel-head-icon-gold">👥</div>
-            <div><h2 class="panel-title">All users</h2><p class="panel-sub"><%= users.length %> in this view</p></div>
+            <div class="panel-head-icon panel-head-icon-gold">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="panel-title">All users</h2>
+                <p class="panel-sub"><%= users.length %> in this view</p>
+            </div>
         </div>
+
         <nav class="pill-tabs">
-            <% ['All','student','faculty','admin'].forEach(t => { %>
-                <a class="pill-tab <%= filter === t ? 'is-active' : '' %>" href="/admin/dashboard?role=<%= t %>"><%= t.charAt(0).toUpperCase() + t.slice(1) %></a>
+            <% ['All', 'student', 'faculty', 'admin'].forEach(t => { %>
+                <a class="pill-tab <%= filter === t ? 'is-active' : '' %>" href="/admin/dashboard?role=<%= t %>">
+                    <%= t.charAt(0).toUpperCase() + t.slice(1) %>
+                </a>
             <% }) %>
         </nav>
-        <ul class="user-list">
-            <% users.forEach(u => { %>
-                <li class="user-row">
-                    <div class="user-avatar role-<%= u.role %>"><%= u.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() %></div>
-                    <div class="user-meta">
-                        <div class="user-name"><%= u.full_name %></div>
-                        <div class="user-email"><%= u.email %></div>
-                    </div>
-                    <div class="user-tags">
-                        <span class="role-chip role-<%= u.role %>"><%= u.role %></span>
-                        <% if (u.is_active === 1) { %><span class="status status-approved">Active</span><% } else { %><span class="status status-declined">Inactive</span><% } %>
-                    </div>
-                    <div class="user-actions">
-                        <% if (u.id !== user.id) { %>
-                            <form method="post" action="/admin/toggle-active" style="display:inline">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                <input type="hidden" name="user_id" value="<%= u.id %>">
-                                <button class="btn-icon btn-icon-ghost"><%= u.is_active === 1 ? '✕' : '✓' %></button>
-                            </form>
-                            <form method="post" action="/admin/delete-user" style="display:inline" onsubmit="return confirm('Delete user?');">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                <input type="hidden" name="user_id" value="<%= u.id %>">
-                                <button class="btn-icon btn-icon-danger">🗑</button>
-                            </form>
-                        <% } else { %>
-                            <span class="you-chip">You</span>
-                        <% } %>
-                    </div>
-                </li>
-            <% }) %>
-        </ul>
+
+        <% if (!users.length) { %>
+            <div class="empty">
+                <h3>No users found</h3>
+                <p>Try a different filter.</p>
+            </div>
+        <% } else { %>
+            <ul class="user-list">
+                <% users.forEach(u => { %>
+                    <% var initials = u.full_name.replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i,'').split(/\s+/).slice(0,2).map(n => n[0]).join('').toUpperCase(); %>
+                    <% var isActive = (u.is_active === 1); %>
+                    <li class="user-row">
+                        <div class="user-avatar role-<%= u.role %>"><%= initials %></div>
+
+                        <div class="user-meta">
+                            <div class="user-name"><%= u.full_name %></div>
+                            <div class="user-email"><%= u.email %></div>
+                        </div>
+
+                        <div class="user-tags">
+                            <span class="role-chip role-<%= u.role %>"><%= u.role %></span>
+                            <% if (u.department) { %>
+                                <span class="dept-chip"><%= u.department %></span>
+                            <% } %>
+                            <% if (isActive) { %>
+                                <span class="status status-approved">Active</span>
+                            <% } else { %>
+                                <span class="status status-declined">Inactive</span>
+                            <% } %>
+                        </div>
+
+                        <div class="user-actions">
+                            <% if (u.id !== user.id) { %>
+
+                                <!-- EDIT -->
+                                <button type="button"
+                                        class="btn-icon btn-icon-edit"
+                                        title="Edit user"
+                                        data-edit-btn
+                                        data-id="<%= u.id %>"
+                                        data-name="<%= u.full_name %>"
+                                        data-email="<%= u.email %>"
+                                        data-role="<%= u.role %>"
+                                        data-department="<%= u.department || '' %>">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                </button>
+
+                                <!-- TOGGLE ACTIVE -->
+                                <form method="post" action="/admin/toggle-active"
+                                      class="js-confirm-form"
+                                      data-confirm="<%= isActive ? 'Deactivate' : 'Activate' %> this account?"
+                                      style="display:inline">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <input type="hidden" name="user_id" value="<%= u.id %>">
+                                    <button type="submit" class="btn-icon <%= isActive ? 'btn-icon-ghost' : 'btn-icon-ok' %>"
+                                            title="<%= isActive ? 'Deactivate' : 'Activate' %>">
+                                        <% if (isActive) { %>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                        <% } else { %>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                        <% } %>
+                                    </button>
+                                </form>
+
+                                <!-- DELETE -->
+                                <form method="post" action="/admin/delete-user"
+                                      class="js-confirm-form"
+                                      data-confirm="PERMANENTLY delete <%= u.full_name %>? This removes the user AND all their bookings and schedules."
+                                      style="display:inline">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <input type="hidden" name="user_id" value="<%= u.id %>">
+                                    <button type="submit" class="btn-icon btn-icon-danger" title="Delete">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                        </svg>
+                                    </button>
+                                </form>
+
+                            <% } else { %>
+                                <span class="you-chip">You</span>
+                            <% } %>
+                        </div>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } %>
     </section>
 </div>
+
+<!-- ============ EDIT USER MODAL ============ -->
+<div class="modal-overlay" id="editModal" style="display:none;">
+    <div class="modal" style="max-width: 520px;">
+        <header class="modal-head">
+            <div>
+                <h2>Edit user</h2>
+                <p class="modal-faculty">Update account details</p>
+            </div>
+            <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Close">&times;</button>
+        </header>
+
+        <form method="post" action="/admin/edit-user" class="modal-body" id="editForm">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="user_id" id="editUserId">
+
+            <label class="field">
+                <span>Full name</span>
+                <input type="text" name="full_name" id="editName" maxlength="100" required>
+            </label>
+
+            <label class="field">
+                <span>Email address</span>
+                <input type="email" name="email" id="editEmail" maxlength="150" required>
+            </label>
+
+            <label class="field">
+                <span>Role</span>
+                <select name="role" id="editRole">
+                    <option value="student">Student</option>
+                    <option value="faculty">Faculty</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </label>
+
+            <label class="field" id="editDepartmentField">
+                <span>Department <em>(faculty only)</em></span>
+                <select name="department" id="editDepartment">
+                    <% departments.forEach(d => { %>
+                        <option value="<%= d %>"><%= d %></option>
+                    <% }) %>
+                </select>
+            </label>
+
+            <label class="field">
+                <span>New password <em>(leave blank to keep current)</em></span>
+                <input type="text" name="new_password" minlength="8" placeholder="Optional — min 8 chars">
+            </label>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    /* -------- Confirm dialogs for toggle/delete forms -------- */
+    document.querySelectorAll('.js-confirm-form').forEach(function(form) {
+        form.addEventListener('submit', function(ev) {
+            var msg = form.getAttribute('data-confirm') || 'Are you sure?';
+            if (!confirm(msg)) ev.preventDefault();
+        });
+    });
+
+    /* -------- Edit user modal -------- */
+    var modal       = document.getElementById('editModal');
+    var roleSelect  = document.getElementById('editRole');
+    var deptField   = document.getElementById('editDepartmentField');
+    var editForm    = document.getElementById('editForm');
+    var newPassInput = editForm.querySelector('input[name="new_password"]');
+
+    function updateDeptVisibility() {
+        deptField.style.display = (roleSelect.value === 'faculty') ? '' : 'none';
+    }
+    roleSelect.addEventListener('change', updateDeptVisibility);
+
+    document.querySelectorAll('[data-edit-btn]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById('editUserId').value      = btn.dataset.id;
+            document.getElementById('editName').value        = btn.dataset.name;
+            document.getElementById('editEmail').value       = btn.dataset.email;
+            document.getElementById('editRole').value        = btn.dataset.role;
+            document.getElementById('editDepartment').value  = btn.dataset.department || 'Computer Science';
+            newPassInput.value = '';
+
+            updateDeptVisibility();
+            modal.style.display = 'grid';
+            document.body.classList.add('modal-open');
+        });
+    });
+
+    window.closeEditModal = function() {
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+    };
+
+    document.addEventListener('keydown', function(ev) {
+        if (ev.key === 'Escape' && modal.style.display === 'grid') closeEditModal();
+    });
+
+    modal.addEventListener('click', function(ev) {
+        if (ev.target === modal) closeEditModal();
+    });
+})();
+</script>

@@ -69,6 +69,18 @@ A web-based consultation booking platform for universities built with **Node.js 
 - XAMPP or MySQL running on port 3306
 - Git
 
+## 🤖 AI Assistance Disclosure
+In accordance with course project guidelines, we disclose the use of artificial intelligence (AI) tools during the development of this project:
+* **Tool Used:** Deepseek, Gemini (Personal AI Collaborator)
+* **Scope of Assistance:** 
+  * Providing guidance and troubleshooting support for Git workflows (handling pull requests, merges, and resolving synchronization issues).
+  * Boilerplate security patterns (bcrypt, CSRF, sessions)
+  * UI/UX CSS, JS
+  * Structuring requirements documentation and structuring the README file format.
+  * Assisting with debugging Node.js/Express server routing and input validation logic.
+* **Student Ownership:** All core system architecture, database modeling, frontend user interface design, and final code implementation were understood, reviewed, and written by the team members
+
+
 ### Steps
 
 1. **Clone the repo**

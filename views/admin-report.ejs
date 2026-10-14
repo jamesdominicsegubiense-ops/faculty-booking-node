@@ -1,0 +1,62 @@
+<section class="hero hero-compact">
+    <div class="hero-split">
+        <div><span class="hero-eyebrow">Analytics</span><h1 class="page-title">Faculty consultation report</h1></div>
+        <a class="btn btn-ghost" href="/admin/dashboard">← Back</a>
+    </div>
+</section>
+
+<div class="stats stats-4">
+    <div class="stat-card stat-completed"><span class="stat-value"><%= totals.completed %></span><span class="stat-label">Completed</span></div>
+    <div class="stat-card stat-pending"><span class="stat-value"><%= totals.upcoming %></span><span class="stat-label">Upcoming</span></div>
+    <div class="stat-card stat-approved"><span class="stat-value"><%= totals.pending %></span><span class="stat-label">Pending</span></div>
+    <div class="stat-card stat-declined"><span class="stat-value"><%= totals.declined %></span><span class="stat-label">Declined</span></div>
+</div>
+
+<form class="filter-bar" method="get" action="/admin/faculty-report">
+    <div class="filter-bar-fields">
+        <label class="filter-bar-field"><input type="date" name="from" value="<%= from %>"></label>
+        <label class="filter-bar-field"><input type="date" name="to" value="<%= to %>"></label>
+        <div class="filter-bar-actions">
+            <button class="btn btn-primary">Apply</button>
+            <a class="btn btn-ghost" href="/admin/faculty-report">Reset</a>
+        </div>
+    </div>
+</form>
+
+<p class="result-count"><strong><%= totals.faculty %></strong> faculty · <strong><%= totals.total %></strong> bookings</p>
+
+<div class="report-cards">
+    <% rows.forEach(r => {
+        const total = Number(r.total_requests);
+        const completed = Number(r.completed_count);
+        const upcoming = Number(r.upcoming_count);
+        let label = 'Awaiting', cls = 'status-pending';
+        if (total === 0) { label = 'No activity'; cls = 'status-declined'; }
+        else if (completed >= 5) { label = 'Very active'; cls = 'status-approved'; }
+        else if (completed >= 1) { label = 'Active'; cls = 'status-approved'; }
+        else if (upcoming >= 1) { label = 'Scheduled'; cls = 'status-pending'; }
+    %>
+        <article class="report-card">
+            <header class="report-card-head">
+                <div class="report-card-user">
+                    <div class="user-avatar role-faculty"><%= r.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() %></div>
+                    <div>
+                        <h3 class="report-card-name"><%= r.full_name %></h3>
+                        <p class="report-card-dept"><%= r.department %></p>
+                    </div>
+                </div>
+                <span class="status <%= cls %>"><%= label %></span>
+            </header>
+            <div class="report-metrics">
+                <div class="report-metric"><span class="report-metric-value"><%= total %></span><span class="report-metric-label">Requests</span></div>
+                <div class="report-metric report-metric-ok"><span class="report-metric-value"><%= completed %></span><span class="report-metric-label">Completed</span></div>
+                <div class="report-metric report-metric-pending"><span class="report-metric-value"><%= upcoming %></span><span class="report-metric-label">Upcoming</span></div>
+                <div class="report-metric report-metric-warn"><span class="report-metric-value"><%= r.pending_count %></span><span class="report-metric-label">Pending</span></div>
+                <div class="report-metric report-metric-bad"><span class="report-metric-value"><%= r.declined_count %></span><span class="report-metric-label">Declined</span></div>
+            </div>
+            <footer class="report-card-foot">
+                <small class="muted"><strong>Last:</strong> <%= r.last_consultation || '—' %></small>
+            </footer>
+        </article>
+    <% }) %>
+</div>

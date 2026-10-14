@@ -1,0 +1,88 @@
+<section class="hero hero-compact">
+    <div class="hero-split">
+        <div>
+            <span class="hero-eyebrow">Administrator</span>
+            <h1 class="page-title">Admin dashboard</h1>
+        </div>
+        <a class="btn btn-primary" href="/admin/faculty-report">📊 View faculty report</a>
+    </div>
+</section>
+
+<div class="stats stats-4">
+    <div class="stat-card"><span class="stat-value"><%= stats.students %></span><span class="stat-label">Students</span></div>
+    <div class="stat-card"><span class="stat-value"><%= stats.faculty %></span><span class="stat-label">Faculty</span></div>
+    <div class="stat-card"><span class="stat-value"><%= stats.admins %></span><span class="stat-label">Admins</span></div>
+    <div class="stat-card"><span class="stat-value"><%= stats.bookings %></span><span class="stat-label">Bookings</span></div>
+</div>
+
+<div class="admin-grid">
+    <section class="panel">
+        <div class="panel-head">
+            <div class="panel-head-icon panel-head-icon-blue">+</div>
+            <div><h2 class="panel-title">Create faculty account</h2></div>
+        </div>
+        <form method="post" action="/admin/create-faculty" class="stack">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <label class="field"><span>Full name</span><input type="text" name="full_name" required></label>
+            <label class="field"><span>Email</span><input type="email" name="email" required></label>
+            <label class="field"><span>Temporary password</span><input type="text" name="password" minlength="8" required value="<%= Math.random().toString(36).slice(2,10) %>"></label>
+            <label class="field">
+                <span>Department</span>
+                <select name="department" required>
+                    <% departments.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
+                </select>
+            </label>
+            <label class="field"><span>Office location</span><input type="text" name="office_location"></label>
+            <label class="field">
+                <span>Mode</span>
+                <select name="consultation_mode">
+                    <option>In-Person</option><option>Online</option><option>Hybrid</option>
+                </select>
+            </label>
+            <button type="submit" class="btn btn-primary btn-block">+ Create account</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <div class="panel-head-icon panel-head-icon-gold">👥</div>
+            <div><h2 class="panel-title">All users</h2><p class="panel-sub"><%= users.length %> in this view</p></div>
+        </div>
+        <nav class="pill-tabs">
+            <% ['All','student','faculty','admin'].forEach(t => { %>
+                <a class="pill-tab <%= filter === t ? 'is-active' : '' %>" href="/admin/dashboard?role=<%= t %>"><%= t.charAt(0).toUpperCase() + t.slice(1) %></a>
+            <% }) %>
+        </nav>
+        <ul class="user-list">
+            <% users.forEach(u => { %>
+                <li class="user-row">
+                    <div class="user-avatar role-<%= u.role %>"><%= u.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() %></div>
+                    <div class="user-meta">
+                        <div class="user-name"><%= u.full_name %></div>
+                        <div class="user-email"><%= u.email %></div>
+                    </div>
+                    <div class="user-tags">
+                        <span class="role-chip role-<%= u.role %>"><%= u.role %></span>
+                        <% if (u.is_active === 1) { %><span class="status status-approved">Active</span><% } else { %><span class="status status-declined">Inactive</span><% } %>
+                    </div>
+                    <div class="user-actions">
+                        <% if (u.id !== user.id) { %>
+                            <form method="post" action="/admin/toggle-active" style="display:inline">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <input type="hidden" name="user_id" value="<%= u.id %>">
+                                <button class="btn-icon btn-icon-ghost"><%= u.is_active === 1 ? '✕' : '✓' %></button>
+                            </form>
+                            <form method="post" action="/admin/delete-user" style="display:inline" onsubmit="return confirm('Delete user?');">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <input type="hidden" name="user_id" value="<%= u.id %>">
+                                <button class="btn-icon btn-icon-danger">🗑</button>
+                            </form>
+                        <% } else { %>
+                            <span class="you-chip">You</span>
+                        <% } %>
+                    </div>
+                </li>
+            <% }) %>
+        </ul>
+    </section>
+</div>

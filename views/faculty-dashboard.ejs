@@ -1,0 +1,68 @@
+<section class="hero hero-compact">
+    <div class="hero-split">
+        <div>
+            <span class="hero-eyebrow">Faculty Dashboard</span>
+            <h1 class="page-title">Welcome, <%= user.full_name %></h1>
+        </div>
+    </div>
+</section>
+
+<div class="stats stats-4">
+    <% ['Pending','Approved','Completed','Declined'].forEach(s => { %>
+        <div class="stat-card stat-<%= s.toLowerCase() %>">
+            <span class="stat-value"><%= stats[s] %></span>
+            <span class="stat-label"><%= s %></span>
+        </div>
+    <% }) %>
+</div>
+
+<nav class="pill-tabs">
+    <% ['All','Pending','Approved','Completed','Declined'].forEach(t => { %>
+        <a class="pill-tab <%= filter === t ? 'is-active' : '' %>" href="/faculty/dashboard?status=<%= t %>"><%= t %></a>
+    <% }) %>
+</nav>
+
+<% if (!bookings.length) { %>
+    <div class="empty"><h3>No <%= filter.toLowerCase() %> requests</h3></div>
+<% } else { %>
+    <div class="request-list">
+        <% bookings.forEach(b => { %>
+            <article class="request-card">
+                <div class="request-card-main">
+                    <header class="request-card-head">
+                        <div>
+                            <h3 class="request-card-name"><%= b.student_name %></h3>
+                            <p class="request-card-email"><%= b.student_email %></p>
+                        </div>
+                        <span class="status status-<%= b.status.toLowerCase() %>"><%= b.status %></span>
+                    </header>
+                    <div class="request-card-body">
+                        <div class="request-field">📅 <%= b.booking_date %> · <%= b.start_time.slice(0,5) %>–<%= b.end_time.slice(0,5) %></div>
+                        <div class="request-field">💬 <%= b.purpose %></div>
+                        <% if (b.notes) { %>
+                            <details class="request-notes"><summary>View notes</summary><p><%= b.notes %></p></details>
+                        <% } %>
+                    </div>
+                    <footer class="request-card-foot">
+                        <% if (b.status === 'Pending') { %>
+                            <form method="post" action="/faculty/update-status" class="request-actions">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <input type="hidden" name="booking_id" value="<%= b.id %>">
+                                <button name="status" value="Approved" class="btn btn-approve btn-sm">✓ Approve</button>
+                                <button name="status" value="Declined" class="btn btn-decline btn-sm">✕ Decline</button>
+                            </form>
+                        <% } else if (b.status === 'Approved') { %>
+                            <form method="post" action="/faculty/update-status">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <input type="hidden" name="booking_id" value="<%= b.id %>">
+                                <button name="status" value="Completed" class="btn btn-complete btn-sm">✓ Mark as done</button>
+                            </form>
+                        <% } else { %>
+                            <span class="muted small">No action needed</span>
+                        <% } %>
+                    </footer>
+                </div>
+            </article>
+        <% }) %>
+    </div>
+<% } %>

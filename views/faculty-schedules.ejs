@@ -1,0 +1,68 @@
+<section class="hero hero-compact">
+    <div class="hero-split">
+        <div>
+            <span class="hero-eyebrow">Faculty</span>
+            <h1 class="page-title">My weekly consultation hours</h1>
+        </div>
+        <a class="btn btn-ghost" href="/faculty/dashboard">← Back</a>
+    </div>
+</section>
+
+<div class="schedule-grid">
+    <section class="panel">
+        <div class="panel-head">
+            <div class="panel-head-icon panel-head-icon-blue">+</div>
+            <div><h2 class="panel-title">Add new slot</h2></div>
+        </div>
+        <form method="post" action="/faculty/schedules/add" class="stack">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <label class="field">
+                <span>Date</span>
+                <input type="date" name="slot_date" required min="<%= new Date().toISOString().slice(0,10) %>">
+            </label>
+            <div class="time-row">
+                <label class="field"><span>Start</span><input type="time" name="start_time" required></label>
+                <label class="field"><span>End</span><input type="time" name="end_time" required></label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">+ Add slot</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <div class="panel-head-icon panel-head-icon-gold">📅</div>
+            <div style="flex:1"><h2 class="panel-title">Published slots</h2><p class="panel-sub"><%= activeCount %> active</p></div>
+        </div>
+        <% if (!schedules.length) { %>
+            <div class="empty"><h3>No slots yet</h3></div>
+        <% } else { %>
+            <ul class="slot-list-manage">
+                <% schedules.forEach(s => { %>
+                    <li class="slot-item <%= s.is_active === 1 ? '' : 'slot-item-inactive' %>">
+                        <div class="slot-item-left">
+                            <span class="slot-item-day"><%= s.slot_date || s.day_of_week %></span>
+                            <span class="slot-item-time"><%= s.start_time.slice(0,5) %> – <%= s.end_time.slice(0,5) %></span>
+                        </div>
+                        <div class="slot-item-right">
+                            <% if (s.is_active === 1) { %>
+                                <span class="status status-approved">Active</span>
+                            <% } else { %>
+                                <span class="status status-declined">Disabled</span>
+                            <% } %>
+                            <form method="post" action="/faculty/schedules/toggle" style="display:inline">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <input type="hidden" name="schedule_id" value="<%= s.id %>">
+                                <button class="btn-icon btn-icon-ghost"><%= s.is_active === 1 ? '✕' : '✓' %></button>
+                            </form>
+                            <form method="post" action="/faculty/schedules/delete" style="display:inline" onsubmit="return confirm('Delete this slot?');">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <input type="hidden" name="schedule_id" value="<%= s.id %>">
+                                <button class="btn-icon btn-icon-danger">🗑</button>
+                            </form>
+                        </div>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } %>
+    </section>
+</div>

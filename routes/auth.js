@@ -6,7 +6,12 @@ const pool = require('../config/database');
 /* ---------- REGISTER ---------- */
 router.get('/register', (req, res) => {
     if (req.session.user) return res.redirect('/');
-    res.render('register', { title: 'Create Account', old: {}, errors: [] });
+    res.render('register', {
+        title: 'Create Account',
+        old: {},
+        errors: [],
+        isAuthPage: true,
+    });
 });
 
 router.post('/register', async (req, res) => {
@@ -24,7 +29,12 @@ router.post('/register', async (req, res) => {
     }
 
     if (errors.length) {
-        return res.render('register', { title: 'Create Account', old: { full_name, email }, errors });
+        return res.render('register', {
+            title: 'Create Account',
+            old: { full_name, email },
+            errors,
+            isAuthPage: true,
+        });
     }
 
     const hash = await bcrypt.hash(password, 10);
@@ -41,16 +51,24 @@ router.post('/register', async (req, res) => {
 /* ---------- LOGIN ---------- */
 router.get('/login', (req, res) => {
     if (req.session.user) return res.redirect('/');
-    res.render('login', { title: 'Log In', email: '' });
+    res.render('login', {
+        title: 'Log In',
+        email: '',
+        isAuthPage: true,
+    });
 });
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-        req.flash('error', 'Please enter both your email and password.');
-        return res.render('login', { title: 'Log In', email });
-    }
+    const renderError = (msg) => res.render('login', {
+        title: 'Log In',
+        email,
+        loginError: msg,
+        isAuthPage: true,
+    });
+
+    if (!email || !password) return renderError('Please enter both your email and password.');
 
     const [rows] = await pool.query(
         'SELECT id, full_name, email, password_hash, role, is_active FROM users WHERE email = ? LIMIT 1',
@@ -59,10 +77,7 @@ router.post('/login', async (req, res) => {
     const user = rows[0];
 
     const valid = user && user.is_active === 1 && await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
-        req.flash('error', 'Invalid email or password.');
-        return res.render('login', { title: 'Log In', email });
-    }
+    if (!valid) return renderError('Invalid email or password.');
 
     req.session.regenerate(err => {
         if (err) console.error(err);

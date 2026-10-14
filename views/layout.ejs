@@ -9,12 +9,16 @@
 <body>
     <%- include('partials/header') %>
 
-    <% if (locals.layout === false) { %>
+    <% if (locals.isAuthPage) { %>
         <%- body %>
     <% } else { %>
         <main class="container page">
-            <% if (success && success.length) { %><div class="alert alert-success"><%= success[0] %></div><% } %>
-            <% if (error && error.length) { %><div class="alert alert-error"><%= error[0] %></div><% } %>
+            <% if (success && success.length) { %>
+                <div class="alert alert-success"><%= success[0] %></div>
+            <% } %>
+            <% if (error && error.length) { %>
+                <div class="alert alert-error"><%= error[0] %></div>
+            <% } %>
             <%- body %>
         </main>
     <% } %>

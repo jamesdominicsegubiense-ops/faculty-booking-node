@@ -3,6 +3,7 @@
         <div>
             <span class="hero-eyebrow">Faculty Dashboard</span>
             <h1 class="page-title">Welcome, <%= user.full_name %></h1>
+            <p class="page-sub">Review, approve, or decline your incoming consultation requests.</p>
         </div>
     </div>
 </section>
@@ -10,6 +11,12 @@
 <div class="stats stats-4">
     <% ['Pending','Approved','Completed','Declined'].forEach(s => { %>
         <div class="stat-card stat-<%= s.toLowerCase() %>">
+            <div class="stat-icon">
+                <% if (s === 'Pending') { %>⏱<% } %>
+                <% if (s === 'Approved') { %>✓<% } %>
+                <% if (s === 'Completed') { %>✅<% } %>
+                <% if (s === 'Declined') { %>✕<% } %>
+            </div>
             <span class="stat-value"><%= stats[s] %></span>
             <span class="stat-label"><%= s %></span>
         </div>
@@ -23,11 +30,20 @@
 </nav>
 
 <% if (!bookings.length) { %>
-    <div class="empty"><h3>No <%= filter.toLowerCase() %> requests</h3></div>
+    <div class="empty">
+        <h3>No <%= filter === 'All' ? '' : filter.toLowerCase() + ' ' %>requests</h3>
+        <p>When students book your published slots, their requests will appear here.</p>
+    </div>
 <% } else { %>
     <div class="request-list">
         <% bookings.forEach(b => { %>
             <article class="request-card">
+                <div class="request-card-left">
+                    <div class="user-avatar role-student">
+                        <%= b.student_name.replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i,'').split(/\s+/).slice(0,2).map(n => n[0]).join('').toUpperCase() %>
+                    </div>
+                </div>
+
                 <div class="request-card-main">
                     <header class="request-card-head">
                         <div>
@@ -36,27 +52,54 @@
                         </div>
                         <span class="status status-<%= b.status.toLowerCase() %>"><%= b.status %></span>
                     </header>
+
                     <div class="request-card-body">
-                        <div class="request-field">📅 <%= b.booking_date %> · <%= b.start_time.slice(0,5) %>–<%= b.end_time.slice(0,5) %></div>
-                        <div class="request-field">💬 <%= b.purpose %></div>
+                        <div class="request-field">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                <path d="M16 2v4M8 2v4M3 10h18"/>
+                            </svg>
+                            <span><%= b.booking_date %> · <%= b.start_time.slice(0,5) %>–<%= b.end_time.slice(0,5) %></span>
+                        </div>
+                        <div class="request-field">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            <span><%= b.purpose %></span>
+                        </div>
                         <% if (b.notes) { %>
-                            <details class="request-notes"><summary>View notes</summary><p><%= b.notes %></p></details>
+                            <details class="request-notes">
+                                <summary>View notes</summary>
+                                <p><%= b.notes %></p>
+                            </details>
                         <% } %>
                     </div>
+
                     <footer class="request-card-foot">
                         <% if (b.status === 'Pending') { %>
                             <form method="post" action="/faculty/update-status" class="request-actions">
                                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                 <input type="hidden" name="booking_id" value="<%= b.id %>">
-                                <button name="status" value="Approved" class="btn btn-approve btn-sm">✓ Approve</button>
-                                <button name="status" value="Declined" class="btn btn-decline btn-sm">✕ Decline</button>
+                                <button type="submit" name="status" value="Approved" class="btn btn-approve btn-sm">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                    Approve
+                                </button>
+                                <button type="submit" name="status" value="Declined" class="btn btn-decline btn-sm">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                    Decline
+                                </button>
                             </form>
                         <% } else if (b.status === 'Approved') { %>
-                            <form method="post" action="/faculty/update-status">
+                            <form method="post" action="/faculty/update-status" onsubmit="return confirm('Mark this consultation as completed?');">
                                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                 <input type="hidden" name="booking_id" value="<%= b.id %>">
-                                <button name="status" value="Completed" class="btn btn-complete btn-sm">✓ Mark as done</button>
+                                <button type="submit" name="status" value="Completed" class="btn btn-complete btn-sm">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                                    Mark as done
+                                </button>
                             </form>
+                        <% } else if (b.status === 'Completed') { %>
+                            <span class="status status-completed">✓ Consultation completed</span>
                         <% } else { %>
                             <span class="muted small">No action needed</span>
                         <% } %>

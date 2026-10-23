@@ -54,8 +54,7 @@
 </div>
 
 <div class="admin-grid">
-
-    <!-- ============ CREATE FACULTY ============ -->
+    <!-- CREATE FACULTY -->
     <section class="panel">
         <div class="panel-head">
             <div class="panel-head-icon panel-head-icon-blue">
@@ -71,56 +70,28 @@
 
         <form method="post" action="/admin/create-faculty" class="stack">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-            <label class="field">
-                <span>Full name</span>
-                <input type="text" name="full_name" maxlength="100" required placeholder="e.g. Dr. Jane Smith">
-            </label>
-
-            <label class="field">
-                <span>Email address</span>
-                <input type="email" name="email" maxlength="150" required placeholder="jane.smith@university.edu">
-            </label>
-
-            <label class="field">
-                <span>Temporary password</span>
-                <input type="text" name="password" minlength="8" required value="<%= Math.random().toString(36).slice(2,10) %>">
-                <small class="muted small">Share this with the faculty member.</small>
-            </label>
-
+            <label class="field"><span>Full name</span><input type="text" name="full_name" maxlength="100" required placeholder="e.g. Dr. Jane Smith"></label>
+            <label class="field"><span>Email address</span><input type="email" name="email" maxlength="150" required placeholder="jane.smith@university.edu"></label>
+            <label class="field"><span>Temporary password</span><input type="text" name="password" minlength="8" required value="<%= Math.random().toString(36).slice(2,10) %>"><small class="muted small">Share this with the faculty member.</small></label>
             <label class="field">
                 <span>Department</span>
                 <select name="department" required>
-                    <% departments.forEach(d => { %>
-                        <option value="<%= d %>"><%= d %></option>
-                    <% }) %>
+                    <% departments.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
                 </select>
             </label>
-
-            <label class="field">
-                <span>Office location <em>(optional)</em></span>
-                <input type="text" name="office_location" maxlength="100" placeholder="e.g. Room 304">
-            </label>
-
+            <label class="field"><span>Office location <em>(optional)</em></span><input type="text" name="office_location" maxlength="100" placeholder="e.g. Room 304"></label>
             <label class="field">
                 <span>Consultation mode</span>
-                <select name="consultation_mode">
-                    <option>In-Person</option>
-                    <option>Online</option>
-                    <option>Hybrid</option>
-                </select>
+                <select name="consultation_mode"><option>In-Person</option><option>Online</option><option>Hybrid</option></select>
             </label>
-
             <button type="submit" class="btn btn-primary btn-block">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 5v14M5 12h14"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                 Create account
             </button>
         </form>
     </section>
 
-    <!-- ============ USER LIST ============ -->
+    <!-- USER LIST -->
     <section class="panel">
         <div class="panel-head">
             <div class="panel-head-icon panel-head-icon-gold">
@@ -136,17 +107,12 @@
 
         <nav class="pill-tabs">
             <% ['All', 'student', 'faculty', 'admin'].forEach(t => { %>
-                <a class="pill-tab <%= filter === t ? 'is-active' : '' %>" href="/admin/dashboard?role=<%= t %>">
-                    <%= t.charAt(0).toUpperCase() + t.slice(1) %>
-                </a>
+                <a class="pill-tab <%= filter === t ? 'is-active' : '' %>" href="/admin/dashboard?role=<%= t %>"><%= t.charAt(0).toUpperCase() + t.slice(1) %></a>
             <% }) %>
         </nav>
 
         <% if (!users.length) { %>
-            <div class="empty">
-                <h3>No users found</h3>
-                <p>Try a different filter.</p>
-            </div>
+            <div class="empty"><h3>No users found</h3><p>Try a different filter.</p></div>
         <% } else { %>
             <ul class="user-list">
                 <% users.forEach(u => { %>
@@ -154,78 +120,35 @@
                     <% var isActive = (u.is_active === 1); %>
                     <li class="user-row">
                         <div class="user-avatar role-<%= u.role %>"><%= initials %></div>
-
                         <div class="user-meta">
                             <div class="user-name"><%= u.full_name %></div>
                             <div class="user-email"><%= u.email %></div>
                         </div>
-
                         <div class="user-tags">
                             <span class="role-chip role-<%= u.role %>"><%= u.role %></span>
-                            <!-- THE FIX IS HERE -->
                             <% if (u.role === 'faculty' && u.department) { %>
                                 <span class="dept-chip"><%= u.department %></span>
                             <% } %>
-                            <% if (isActive) { %>
-                                <span class="status status-approved">Active</span>
-                            <% } else { %>
-                                <span class="status status-declined">Inactive</span>
-                            <% } %>
+                            <% if (isActive) { %><span class="status status-approved">Active</span><% } else { %><span class="status status-declined">Inactive</span><% } %>
                         </div>
-
                         <div class="user-actions">
                             <% if (u.id !== user.id) { %>
-
-                                <!-- EDIT -->
-                                <button type="button"
-                                        class="btn-icon btn-icon-edit"
-                                        title="Edit user"
-                                        data-edit-btn
-                                        data-id="<%= u.id %>"
-                                        data-name="<%= u.full_name %>"
-                                        data-email="<%= u.email %>"
-                                        data-role="<%= u.role %>"
-                                        data-department="<%= u.department || '' %>">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                    </svg>
+                                <button type="button" class="btn-icon btn-icon-edit" title="Edit user" data-edit-btn data-id="<%= u.id %>" data-name="<%= u.full_name %>" data-email="<%= u.email %>" data-role="<%= u.role %>" data-department="<%= u.department || '' %>">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
-
-                                <!-- TOGGLE ACTIVE -->
-                                <form method="post" action="/admin/toggle-active"
-                                      class="js-confirm-form"
-                                      data-confirm="<%= isActive ? 'Deactivate' : 'Activate' %> this account?"
-                                      style="display:inline">
+                                <form method="post" action="/admin/toggle-active" class="js-confirm-form" data-confirm="<%= isActive ? 'Deactivate' : 'Activate' %> this account?" style="display:inline">
                                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                     <input type="hidden" name="user_id" value="<%= u.id %>">
-                                    <button type="submit" class="btn-icon <%= isActive ? 'btn-icon-ghost' : 'btn-icon-ok' %>"
-                                            title="<%= isActive ? 'Deactivate' : 'Activate' %>">
-                                        <% if (isActive) { %>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                        <% } else { %>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                                        <% } %>
+                                    <button type="submit" class="btn-icon <%= isActive ? 'btn-icon-ghost' : 'btn-icon-ok' %>" title="<%= isActive ? 'Deactivate' : 'Activate' %>">
+                                        <% if (isActive) { %><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg><% } else { %><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg><% } %>
                                     </button>
                                 </form>
-
-                                <!-- DELETE -->
-                                <form method="post" action="/admin/delete-user"
-                                      class="js-confirm-form"
-                                      data-confirm="PERMANENTLY delete <%= u.full_name %>? This removes the user AND all their bookings and schedules."
-                                      style="display:inline">
+                                <form method="post" action="/admin/delete-user" class="js-confirm-form" data-confirm="PERMANENTLY delete <%= u.full_name %>?" style="display:inline">
                                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                     <input type="hidden" name="user_id" value="<%= u.id %>">
-                                    <button type="submit" class="btn-icon btn-icon-danger" title="Delete">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                                        </svg>
-                                    </button>
+                                    <button type="submit" class="btn-icon btn-icon-danger" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
                                 </form>
-
-                            <% } else { %>
-                                <span class="you-chip">You</span>
-                            <% } %>
+                            <% } else { %><span class="you-chip">You</span><% } %>
                         </div>
                     </li>
                 <% }) %>
@@ -234,54 +157,65 @@
     </section>
 </div>
 
-<!-- ============ EDIT USER MODAL ============ -->
+<!-- ============ CHART & LOGS SECTION ============ -->
+<div class="admin-grid" style="margin-top: 1.5rem; grid-template-columns: 1fr 1fr;">
+    
+    <!-- CHART -->
+    <div class="panel">
+        <h2 class="panel-title" style="text-align: center; margin-bottom: 1rem;">Consultation Status</h2>
+        <div style="max-width: 350px; margin: 0 auto;">
+            <canvas id="bookingChart"></canvas>
+        </div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="panel">
+        <h2 class="panel-title">Recent System Activity</h2>
+        <ul class="user-list" style="margin-top: 1rem;">
+            <% if (typeof logs !== 'undefined' && logs.length > 0) { %>
+                <% logs.forEach(log => { %>
+                    <li class="user-row" style="grid-template-columns: 1fr auto;">
+                        <div class="user-meta">
+                            <div class="user-name"><%= log.full_name %></div>
+                            <div class="user-email"><%= log.action %></div>
+                        </div>
+                        <div class="user-tags">
+                            <span class="dept-chip"><%= new Date(log.created_at).toLocaleString() %></span>
+                        </div>
+                    </li>
+                <% }) %>
+            <% } else { %>
+                <li class="user-row"><p class="muted small">No recent activity.</p></li>
+            <% } %>
+        </ul>
+    </div>
+</div>
+
+<!-- EDIT USER MODAL -->
 <div class="modal-overlay" id="editModal" style="display:none;">
     <div class="modal" style="max-width: 520px;">
         <header class="modal-head">
-            <div>
-                <h2>Edit user</h2>
-                <p class="modal-faculty">Update account details</p>
-            </div>
+            <div><h2>Edit user</h2><p class="modal-faculty">Update account details</p></div>
             <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Close">&times;</button>
         </header>
-
         <form method="post" action="/admin/edit-user" class="modal-body" id="editForm">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <input type="hidden" name="user_id" id="editUserId">
-
-            <label class="field">
-                <span>Full name</span>
-                <input type="text" name="full_name" id="editName" maxlength="100" required>
-            </label>
-
-            <label class="field">
-                <span>Email address</span>
-                <input type="email" name="email" id="editEmail" maxlength="150" required>
-            </label>
-
+            <label class="field"><span>Full name</span><input type="text" name="full_name" id="editName" maxlength="100" required></label>
+            <label class="field"><span>Email address</span><input type="email" name="email" id="editEmail" maxlength="150" required></label>
             <label class="field">
                 <span>Role</span>
                 <select name="role" id="editRole">
-                    <option value="student">Student</option>
-                    <option value="faculty">Faculty</option>
-                    <option value="admin">Admin</option>
+                    <option value="student">Student</option><option value="faculty">Faculty</option><option value="admin">Admin</option>
                 </select>
             </label>
-
             <label class="field" id="editDepartmentField">
                 <span>Department <em>(faculty only)</em></span>
                 <select name="department" id="editDepartment">
-                    <% departments.forEach(d => { %>
-                        <option value="<%= d %>"><%= d %></option>
-                    <% }) %>
+                    <% departments.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
                 </select>
             </label>
-
-            <label class="field">
-                <span>New password <em>(leave blank to keep current)</em></span>
-                <input type="text" name="new_password" minlength="8" placeholder="Optional — min 8 chars">
-            </label>
-
+            <label class="field"><span>New password <em>(leave blank to keep current)</em></span><input type="text" name="new_password" minlength="8" placeholder="Optional — min 8 chars"></label>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save changes</button>
@@ -290,9 +224,15 @@
     </div>
 </div>
 
+<!-- HIDDEN ELEMENT TO PASS CHART DATA TO JS -->
+<div id="chart-data-container" data-chart='<%- JSON.stringify(typeof chartData !== "undefined" ? chartData : []) %>' style="display:none;"></div>
+
+<!-- CHART.JS LIBRARY -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 (function() {
-    /* -------- Confirm dialogs for toggle/delete forms -------- */
+    /* -------- Confirm dialogs -------- */
     document.querySelectorAll('.js-confirm-form').forEach(function(form) {
         form.addEventListener('submit', function(ev) {
             var msg = form.getAttribute('data-confirm') || 'Are you sure?';
@@ -301,10 +241,10 @@
     });
 
     /* -------- Edit user modal -------- */
-    var modal       = document.getElementById('editModal');
-    var roleSelect  = document.getElementById('editRole');
-    var deptField   = document.getElementById('editDepartmentField');
-    var editForm    = document.getElementById('editForm');
+    var modal = document.getElementById('editModal');
+    var roleSelect = document.getElementById('editRole');
+    var deptField = document.getElementById('editDepartmentField');
+    var editForm = document.getElementById('editForm');
     var newPassInput = editForm.querySelector('input[name="new_password"]');
 
     function updateDeptVisibility() {
@@ -314,13 +254,12 @@
 
     document.querySelectorAll('[data-edit-btn]').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            document.getElementById('editUserId').value      = btn.dataset.id;
-            document.getElementById('editName').value        = btn.dataset.name;
-            document.getElementById('editEmail').value       = btn.dataset.email;
-            document.getElementById('editRole').value        = btn.dataset.role;
-            document.getElementById('editDepartment').value  = btn.dataset.department || 'Computer Science';
+            document.getElementById('editUserId').value = btn.dataset.id;
+            document.getElementById('editName').value = btn.dataset.name;
+            document.getElementById('editEmail').value = btn.dataset.email;
+            document.getElementById('editRole').value = btn.dataset.role;
+            document.getElementById('editDepartment').value = btn.dataset.department || 'Computer Science';
             newPassInput.value = '';
-
             updateDeptVisibility();
             modal.style.display = 'grid';
             document.body.classList.add('modal-open');
@@ -339,5 +278,43 @@
     modal.addEventListener('click', function(ev) {
         if (ev.target === modal) closeEditModal();
     });
+
+    /* -------- Render Chart -------- */
+    var chartDataElement = document.getElementById('chart-data-container');
+    var chartData = [];
+    
+    if (chartDataElement) {
+        try {
+            chartData = JSON.parse(chartDataElement.getAttribute('data-chart') || '[]');
+        } catch(e) {
+            console.error('Error parsing chart data', e);
+        }
+    }
+    
+    if (chartData.length > 0) {
+        const labels = chartData.map(d => d.status);
+        const dataCounts = chartData.map(d => d.count);
+
+        const ctx = document.getElementById('bookingChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataCounts,
+                        backgroundColor: ['#f5c000', '#1c7c54', '#1d4ed8', '#a4262c'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+    }
 })();
 </script>

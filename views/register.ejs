@@ -28,6 +28,11 @@
             <form method="post" action="/register" class="stack">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 
+            <% if (errors && errors.length) { %>
+                <div class="alert alert-error"><ul><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul></div>
+            <% } %>
+            <form method="post" action="/register" class="stack">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <label class="field">
                     <span>Full name</span>
                     <input type="text" name="full_name" maxlength="100" required value="<%= old.full_name || '' %>" placeholder="Juan Dela Cruz">
@@ -52,6 +57,7 @@
                         </div>
                     </label>
                     
+                    </label>
                     <label class="field">
                         <span>Confirm password</span>
                         <div class="password-wrap">
@@ -69,6 +75,10 @@
             
             <p class="auth-foot">Already have an account? <a href="/login" class="auth-link">Sign in</a></p>
             
+                <button type="submit" class="btn btn-primary btn-block btn-lg">Create account</button>
+            </form>
+            <div class="auth-divider"><span>or</span></div>
+            <p class="auth-foot">Already have an account? <a href="/login" class="auth-link">Sign in</a></p>
             <div class="demo-box demo-box-note">
                 <strong>Faculty or admin?</strong>
                 <p class="muted small" style="margin:.3rem 0 .75rem">
@@ -123,3 +133,4 @@
         }
     });
 </script>
+</div>

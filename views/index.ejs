@@ -148,6 +148,12 @@
     </div>
 </div>
 
+<!-- Safely pass EJS data to JavaScript without VS Code errors -->
+<script id="schedule-data" type="application/json">
+    <%- JSON.stringify(schedulesByFaculty) %>
+</script>
+
 <script>
-    window.SCHEDULES = <%- JSON.stringify(schedulesByFaculty) %>;
+    var rawScheduleData = document.getElementById('schedule-data').textContent;
+    window.SCHEDULES = JSON.parse(rawScheduleData || '{}');
 </script>

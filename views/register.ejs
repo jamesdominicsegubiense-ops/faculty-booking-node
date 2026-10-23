@@ -1,0 +1,125 @@
+<div class="auth-shell">
+    <aside class="auth-brand">
+        <div class="auth-brand-body">
+            <h2 class="auth-brand-title">Faculink</h2>
+            <p class="auth-brand-sub">
+                Faculty Consultation Booking System
+                <span class="auth-brand-tagline">"Making Academic Consultations Easier."</span>
+            </p>
+            <ul class="auth-features">
+                <li><span class="feature-dot"></span>Browse faculty availability in real time</li>
+                <li><span class="feature-dot"></span>Pick a slot that fits your schedule</li>
+                <li><span class="feature-dot"></span>Track every request from pending to completed</li>
+            </ul>
+        </div>
+        <div class="auth-brand-foot">
+            <span>© <%= new Date().getFullYear() %> Faculty Consult</span>
+        </div>
+    </aside>
+    <section class="auth-form-panel">
+        <div class="auth-form-inner">
+            <h1 class="auth-title">Create your account</h1>
+            <p class="auth-sub">Sign up as a student to start booking consultations.</p>
+            
+            <% if (errors && errors.length) { %>
+                <div class="alert alert-error"><ul><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul></div>
+            <% } %>
+            
+            <form method="post" action="/register" class="stack">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                
+                <label class="field">
+                    <span>Full name</span>
+                    <input type="text" name="full_name" maxlength="100" required value="<%= old.full_name || '' %>" placeholder="Juan Dela Cruz">
+                </label>
+                
+                <label class="field">
+                    <span>Email address</span>
+                    <input type="email" name="email" maxlength="150" required value="<%= old.email || '' %>" placeholder="you@student.edu">
+                </label>
+                
+                <div class="field-row">
+                    <label class="field">
+                        <span>Password</span>
+                        <div class="password-wrap">
+                            <input type="password" name="password" id="regPassword" required
+                               placeholder="Enter your password" minlength="8" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('regPassword', this)">👁</button>
+                        </div>
+                        <!-- PASSWORD STRENGTH METER -->
+                        <div id="password-strength" style="font-size: 0.75rem; margin-top: 4px; color: var(--muted);">
+                            Strength: <span id="strength-text" style="font-weight: bold;">None</span>
+                        </div>
+                    </label>
+                    
+                    <label class="field">
+                        <span>Confirm password</span>
+                        <div class="password-wrap">
+                            <input type="password" name="password_confirm" id="regPasswordConfirm" required
+                               placeholder="Confirm your password" minlength="8" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('regPasswordConfirm', this)">👁</button>
+                        </div>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">Create account</button>
+            </form>
+            
+            <div class="auth-divider"><span>or</span></div>
+            
+            <p class="auth-foot">Already have an account? <a href="/login" class="auth-link">Sign in</a></p>
+            
+            <div class="demo-box demo-box-note">
+                <strong>Faculty or admin?</strong>
+                <p class="muted small" style="margin:.3rem 0 .75rem">
+                    Faculty accounts are created by the administrator.
+                </p>
+                <a class="btn btn-primary btn-sm" href="https://mail.google.com/mail/?view=cm&to=admin@university.edu&su=Faculty%20Account%20Request" target="_blank" rel="noopener">
+                    Contact admin via Gmail
+                </a>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- SCRIPTS FOR TOGGLE AND STRENGTH METER -->
+<script>
+    // 1. Toggle Password Visibility
+    function togglePassword(id, btn) {
+        var inp = document.getElementById(id);
+        if (!inp) return;
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            btn.classList.add('is-visible');
+        } else {
+            inp.type = 'password';
+            btn.classList.remove('is-visible');
+        }
+    }
+
+    // 2. Password Strength Meter Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const passwordInput = document.getElementById('regPassword');
+        const strengthText = document.getElementById('strength-text');
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function(e) {
+                const password = e.target.value;
+                
+                if (password.length === 0) {
+                    strengthText.textContent = 'None';
+                    strengthText.style.color = 'gray';
+                } else if (password.length < 6) {
+                    strengthText.textContent = 'Weak';
+                    strengthText.style.color = '#a4262c'; // Red
+                } else if (password.length < 10) {
+                    strengthText.textContent = 'Medium';
+                    strengthText.style.color = '#9a6700'; // Orange/Yellow
+                } else {
+                    strengthText.textContent = 'Strong';
+                    strengthText.style.color = '#1c7c54'; // Green
+                }
+            });
+        }
+    });
+</script>

@@ -1,0 +1,69 @@
+<section class="hero hero-compact">
+    <div class="hero-split">
+        <div>
+            <span class="hero-eyebrow">Student</span>
+            <h1 class="page-title">My consultation requests</h1>
+            <p class="page-sub">Track the status of every consultation you have requested.</p>
+        </div>
+        <a class="btn btn-primary" href="/">+ Book new consultation</a>
+    </div>
+</section>
+
+<% if (!bookings.length) { %>
+    <div class="empty">
+        <h3>You haven't booked any consultations yet</h3>
+        <p>Browse faculty members and pick a time slot that works for you.</p>
+        <p style="margin-top:1.25rem"><a class="btn btn-primary" href="/">Browse faculty</a></p>
+    </div>
+<% } else { %>
+    <div class="booking-cards">
+        <% bookings.forEach(b => { %>
+            <article class="booking-card booking-card-modern">
+                <div class="booking-card-band band-<%= b.status.toLowerCase() %>"></div>
+                <header class="booking-card-head">
+                    <div class="booking-faculty">
+                        <div class="avatar avatar-sm"><%= b.faculty_name.replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i,'').split(/\s+/).slice(0,2).map(n => n[0]).join('').toUpperCase() %></div>
+                        <div>
+                            <h3 class="booking-faculty-name"><%= b.faculty_name %></h3>
+                            <p class="booking-faculty-dept"><%= b.department || 'Faculty' %></p>
+                        </div>
+                    </div>
+                    <span class="status status-<%= b.status.toLowerCase() %>"><%= b.status %></span>
+                </header>
+                <div class="booking-info">
+                    <div class="booking-info-row">
+                        <span class="booking-label">When</span>
+                        <span class="booking-value">
+                            <strong><%= b.booking_date %></strong><br>
+                            <small><%= b.start_time.slice(0,5) %> – <%= b.end_time.slice(0,5) %></small>
+                        </span>
+                    </div>
+                    <div class="booking-info-row">
+                        <span class="booking-label">Mode</span>
+                        <span class="booking-value"><span class="badge badge-mode"><%= b.consultation_mode || '—' %></span></span>
+                    </div>
+                    <% if (b.office_location) { %>
+                        <div class="booking-info-row">
+                            <span class="booking-label">Location</span>
+                            <span class="booking-value"><%= b.office_location %></span>
+                        </div>
+                    <% } %>
+                    <div class="booking-info-row">
+                        <span class="booking-label">Purpose</span>
+                        <span class="booking-value"><%= b.purpose %></span>
+                    </div>
+                </div>
+                <footer class="booking-card-foot">
+                    <small class="muted">Requested <%= b.created_at %></small>
+                    <% if (b.status === 'Pending') { %>
+                        <form method="post" action="/my-bookings/cancel" onsubmit="return confirm('Cancel this request?');">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <input type="hidden" name="booking_id" value="<%= b.id %>">
+                            <button type="submit" class="btn btn-decline btn-sm">Cancel request</button>
+                        </form>
+                    <% } %>
+                </footer>
+            </article>
+        <% }) %>
+    </div>
+<% } %>

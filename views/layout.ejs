@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %> — Faculink</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    
+    <!-- TOASTIFY CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <% if (locals.isAuthPage) { %>
+        <%- body %>
+    <% } else { %>
+        <main class="container page">
+            <%- body %>
+        </main>
+    <% } %>
+
+    <%- include('partials/footer') %>
+
+    <!-- HIDDEN ELEMENTS TO PASS EJS DATA TO JAVASCRIPT SAFELY -->
+    <div id="flash-data" 
+         data-success="<%= typeof success !== 'undefined' && success.length > 0 ? success[0] : '' %>" 
+         data-error="<%= typeof error !== 'undefined' && error.length > 0 ? error[0] : '' %>" 
+         style="display: none;">
+    </div>
+
+    <!-- TOASTIFY JS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const flashData = document.getElementById('flash-data');
+            if (!flashData) return;
+
+            const successMsg = flashData.getAttribute('data-success');
+            const errorMsg = flashData.getAttribute('data-error');
+
+            if (successMsg && successMsg.trim() !== "") {
+                Toastify({
+                    text: successMsg,
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "linear-gradient(to right, #00b09b, #96c93d)", zIndex: 9999 },
+                }).showToast();
+            }
+
+            if (errorMsg && errorMsg.trim() !== "") {
+                Toastify({
+                    text: errorMsg,
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "linear-gradient(to right, #ff5f6d, #ffc371)", zIndex: 9999 },
+                }).showToast();
+            }
+        });
+    </script>
+</body>
+</html>

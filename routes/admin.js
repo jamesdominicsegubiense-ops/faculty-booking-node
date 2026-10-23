@@ -26,22 +26,32 @@ router.get('/dashboard', async (req, res) => {
     const filter = ['All', 'student', 'faculty', 'admin'].includes(req.query.role)
         ? req.query.role : 'All';
 
-    let sql = `SELECT u.id, u.full_name, u.email, u.role, u.is_active, p.department
-               FROM users u LEFT JOIN faculty_profiles p ON p.user_id = u.id`;
+    // THE FIX IS HERE: IF(u.role = 'faculty', p.department, NULL)
+    let sql = "SELECT u.id, u.full_name, u.email, u.role, u.is_active, IF(u.role = 'faculty', p.department, NULL) AS department FROM users u LEFT JOIN faculty_profiles p ON p.user_id = u.id";
+    
     const params = [];
     if (filter !== 'All') { sql += ' WHERE u.role = ?'; params.push(filter); }
-    sql += " ORDER BY FIELD(u.role,'admin','faculty','student'), u.full_name";
+    sql += " ORDER BY FIELD(u.role, 'admin', 'faculty', 'student'), u.full_name";
 
     const [users] = await pool.query(sql, params);
+
+    // Fetch booking statuses for the Chart.js graph
+    const [chartData] = await pool.query("SELECT status, COUNT(*) AS count FROM bookings GROUP BY status");
+
+    // Fetch recent activity logs
+    const [logs] = await pool.query("SELECT a.action, a.created_at, u.full_name FROM activity_logs a JOIN users u ON u.id = a.user_id ORDER BY a.created_at DESC LIMIT 5");
 
     res.render('admin-dashboard', {
         title: 'Admin Dashboard',
         stats, users, filter, departments: DEPARTMENTS,
+        chartData: chartData,
+        logs: logs
     });
 });
 
 /* ---------- CREATE FACULTY ---------- */
 router.post('/create-faculty', async (req, res) => {
+    const me = req.session.user;
     const { full_name, email, password, department, office_location, consultation_mode } = req.body;
 
     if (!full_name || !email || !password || password.length < 8 || !DEPARTMENTS.includes(department)) {
@@ -67,11 +77,18 @@ router.post('/create-faculty', async (req, res) => {
             'INSERT INTO faculty_profiles (user_id, department, office_location, bio, consultation_mode) VALUES (?, ?, ?, ?, ?)',
             [r.insertId, department, office_location || null, 'New faculty member.', consultation_mode]
         );
+        
+        await conn.query(
+            "INSERT INTO activity_logs (user_id, action) VALUES (?, ?)", 
+            [me.id, "Created faculty account: " + full_name]
+        );
+
         await conn.commit();
         conn.release();
-        req.flash('success', `Faculty account for ${full_name} created.`);
+        req.flash('success', 'Faculty account for ' + full_name + ' created.');
     } catch (err) {
-        await conn.rollback(); conn.release();
+        await conn.rollback(); 
+        conn.release();
         console.error(err);
         req.flash('error', 'Could not create faculty account.');
     }
@@ -82,11 +99,24 @@ router.post('/create-faculty', async (req, res) => {
 router.post('/toggle-active', async (req, res) => {
     const me = req.session.user;
     const id = parseInt(req.body.user_id, 10);
+    
     if (!id || id === me.id) {
         req.flash('error', 'You cannot deactivate your own account.');
         return res.redirect('/admin/dashboard');
     }
+
+    const [target] = await pool.query('SELECT full_name, is_active FROM users WHERE id = ? LIMIT 1', [id]);
+    
     await pool.query('UPDATE users SET is_active = NOT is_active WHERE id = ?', [id]);
+    
+    if (target.length > 0) {
+        const action = target[0].is_active === 1 ? 'Deactivated' : 'Activated';
+        await pool.query(
+            "INSERT INTO activity_logs (user_id, action) VALUES (?, ?)", 
+            [me.id, action + " user: " + target[0].full_name]
+        );
+    }
+
     req.flash('success', 'User status updated.');
     res.redirect('/admin/dashboard');
 });
@@ -101,7 +131,7 @@ router.post('/delete-user', async (req, res) => {
         return res.redirect('/admin/dashboard');
     }
 
-    const [target] = await pool.query('SELECT role FROM users WHERE id = ? LIMIT 1', [id]);
+    const [target] = await pool.query('SELECT role, full_name FROM users WHERE id = ? LIMIT 1', [id]);
     if (!target.length) {
         req.flash('error', 'User not found.');
         return res.redirect('/admin/dashboard');
@@ -116,7 +146,100 @@ router.post('/delete-user', async (req, res) => {
     }
 
     await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    
+    await pool.query(
+        "INSERT INTO activity_logs (user_id, action) VALUES (?, ?)", 
+        [me.id, "Deleted user: " + target[0].full_name]
+    );
+
     req.flash('success', 'User deleted.');
+    res.redirect('/admin/dashboard');
+});
+
+/* ---------- EDIT USER ---------- */
+router.post('/edit-user', async (req, res) => {
+    const me = req.session.user;
+    const { user_id, full_name, email, role, new_password, department } = req.body;
+
+    const id = parseInt(user_id, 10);
+    if (!id) {
+        req.flash('error', 'Invalid user ID.');
+        return res.redirect('/admin/dashboard');
+    }
+
+    const errors = [];
+    if (!full_name || full_name.length > 100) errors.push('Full name is required (max 100).');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Valid email is required.');
+    if (!['student', 'faculty', 'admin'].includes(role)) errors.push('Invalid role.');
+    if (new_password && new_password.length < 8) errors.push('New password must be at least 8 characters.');
+
+    if (errors.length === 0) {
+        const [dup] = await pool.query('SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1', [email, id]);
+        if (dup.length) errors.push('That email is already used by another user.');
+    }
+
+    if (id === me.id && role !== 'admin') {
+        errors.push('You cannot change your own role away from admin.');
+    }
+
+    if (role !== 'admin') {
+        const [target] = await pool.query('SELECT role FROM users WHERE id = ? LIMIT 1', [id]);
+        if (target.length && target[0].role === 'admin') {
+            const [[{ c }]] = await pool.query("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'");
+            if (c <= 1) errors.push('Cannot demote the last admin.');
+        }
+    }
+
+    if (errors.length > 0) {
+        req.flash('error', errors.join(' '));
+        return res.redirect('/admin/dashboard');
+    }
+
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const params = [full_name, email, role];
+        let sql = 'UPDATE users SET full_name = ?, email = ?, role = ?';
+
+        if (new_password && new_password.length >= 8) {
+            const hash = await bcrypt.hash(new_password, 10);
+            sql += ', password_hash = ?';
+            params.push(hash);
+        }
+
+        sql += ' WHERE id = ?';
+        params.push(id);
+
+        await conn.query(sql, params);
+
+        if (role === 'faculty' && department) {
+            const [profile] = await conn.query('SELECT id FROM faculty_profiles WHERE user_id = ? LIMIT 1', [id]);
+            if (profile.length) {
+                await conn.query('UPDATE faculty_profiles SET department = ? WHERE user_id = ?', [department, id]);
+            } else {
+                await conn.query(
+                    'INSERT INTO faculty_profiles (user_id, department, bio, consultation_mode) VALUES (?, ?, ?, ?)',
+                    [id, department, 'New faculty member.', 'In-Person']
+                );
+            }
+        }
+
+        await conn.query(
+            "INSERT INTO activity_logs (user_id, action) VALUES (?, ?)", 
+            [me.id, "Updated user: " + full_name]
+        );
+
+        await conn.commit();
+        conn.release();
+        req.flash('success', 'User updated successfully.');
+    } catch (err) {
+        await conn.rollback();
+        conn.release();
+        console.error(err);
+        req.flash('error', 'Could not update user.');
+    }
+
     res.redirect('/admin/dashboard');
 });
 
@@ -167,17 +290,25 @@ router.get('/faculty-report/export', async (req, res) => {
     const to = req.query.to || '';
 
     let dateWhere = '';
-    const params = [];
-    if (/^\d{4}-\d{2}-\d{2}$/.test(from)) { dateWhere += ' AND b.booking_date >= ?'; params.push(from); }
-    if (/^\d{4}-\d{2}-\d{2}$/.test(to))   { dateWhere += ' AND b.booking_date <= ?'; params.push(to); }
+    let params = [];
+    if (from && to) {
+        dateWhere = ' AND b.booking_date >= ? AND b.booking_date <= ?';
+        params = [from, to];
+    } else if (from) {
+        dateWhere = ' AND b.booking_date >= ?';
+        params = [from];
+    } else if (to) {
+        dateWhere = ' AND b.booking_date <= ?';
+        params = [to];
+    }
 
-    const [rows] = await pool.query(`
+    const sql = `
         SELECT u.full_name, u.email, p.department, p.consultation_mode,
                COUNT(b.id) AS total_requests,
-               SUM(CASE WHEN b.status='Pending'   THEN 1 ELSE 0 END) AS pending_count,
-               SUM(CASE WHEN b.status='Approved'  THEN 1 ELSE 0 END) AS approved_count,
+               SUM(CASE WHEN b.status='Pending' THEN 1 ELSE 0 END) AS pending_count,
+               SUM(CASE WHEN b.status='Approved' THEN 1 ELSE 0 END) AS approved_count,
                SUM(CASE WHEN b.status='Completed' THEN 1 ELSE 0 END) AS completed_count,
-               SUM(CASE WHEN b.status='Declined'  THEN 1 ELSE 0 END) AS declined_count,
+               SUM(CASE WHEN b.status='Declined' THEN 1 ELSE 0 END) AS declined_count,
                MAX(CASE WHEN b.status='Completed' THEN b.booking_date END) AS last_consultation
         FROM users u
         INNER JOIN faculty_profiles p ON p.user_id = u.id
@@ -185,31 +316,25 @@ router.get('/faculty-report/export', async (req, res) => {
         WHERE u.role = 'faculty'
         GROUP BY u.id, u.full_name, u.email, p.department, p.consultation_mode
         ORDER BY completed_count DESC, total_requests DESC, u.full_name
-    `, params);
+    `;
 
-    // Build CSV content
-    const header = [
-        'Faculty Name',
-        'Email',
-        'Department',
-        'Consultation Mode',
-        'Total Requests',
-        'Pending',
-        'Approved',
-        'Completed',
-        'Declined',
-        'Last Consultation',
-    ];
+    const [rows] = await pool.query(sql, params);
 
-    const escapeCsv = (val) => {
+    const header = 'Faculty Name,Email,Department,Consultation Mode,Total Requests,Pending,Approved,Completed,Declined,Last Consultation';
+    const csvLines = [header];
+
+    function escapeCsv(val) {
         if (val === null || val === undefined) return '';
-        const s = String(val);
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    };
+        let s = String(val);
+        if (s.indexOf('"') !== -1 || s.indexOf(',') !== -1 || s.indexOf('\n') !== -1) {
+            s = '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+    }
 
-    let csv = header.join(',') + '\n';
-    rows.forEach(r => {
-        csv += [
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const line = [
             escapeCsv(r.full_name),
             escapeCsv(r.email),
             escapeCsv(r.department),
@@ -219,110 +344,16 @@ router.get('/faculty-report/export', async (req, res) => {
             r.approved_count,
             r.completed_count,
             r.declined_count,
-            escapeCsv(r.last_consultation || ''),
-        ].join(',') + '\n';
-    });
+            escapeCsv(r.last_consultation || '')
+        ].join(',');
+        csvLines.push(line);
+    }
 
-    const filename = `faculty-report-${new Date().toISOString().slice(0,10)}.csv`;
+    const csvString = csvLines.join('\n');
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(csv);
-});
-
-/* ---------- EDIT USER ---------- */
-router.post('/edit-user', async (req, res) => {
-    const me = req.session.user;
-    const {
-        user_id,
-        full_name,
-        email,
-        role,
-        new_password,
-        department,
-    } = req.body;
-
-    const id = parseInt(user_id, 10);
-    if (!id) {
-        req.flash('error', 'Invalid user ID.');
-        return res.redirect('/admin/dashboard');
-    }
-
-    // Validate
-    const errors = [];
-    if (!full_name || full_name.length > 100) errors.push('Full name is required (max 100).');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Valid email is required.');
-    if (!['student', 'faculty', 'admin'].includes(role)) errors.push('Invalid role.');
-    if (new_password && new_password.length < 8) errors.push('New password must be at least 8 characters.');
-
-    // Check email uniqueness
-    if (!errors.length) {
-        const [dup] = await pool.query('SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1', [email, id]);
-        if (dup.length) errors.push('That email is already used by another user.');
-    }
-
-    // Prevent demoting yourself from admin (avoid locking out)
-    if (id === me.id && role !== 'admin') {
-        errors.push('You cannot change your own role away from admin.');
-    }
-
-    // Prevent demoting the last admin
-    if (role !== 'admin') {
-        const [target] = await pool.query('SELECT role FROM users WHERE id = ? LIMIT 1', [id]);
-        if (target.length && target[0].role === 'admin') {
-            const [[{ c }]] = await pool.query("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'");
-            if (c <= 1) errors.push('Cannot demote the last admin.');
-        }
-    }
-
-    if (errors.length) {
-        req.flash('error', errors.join(' '));
-        return res.redirect('/admin/dashboard');
-    }
-
-    const conn = await pool.getConnection();
-    try {
-        await conn.beginTransaction();
-
-        // Build update SQL
-        const params = [full_name, email, role];
-        let sql = 'UPDATE users SET full_name = ?, email = ?, role = ?';
-
-        if (new_password && new_password.length >= 8) {
-            const hash = await bcrypt.hash(new_password, 10);
-            sql += ', password_hash = ?';
-            params.push(hash);
-        }
-
-        sql += ' WHERE id = ?';
-        params.push(id);
-
-        await conn.query(sql, params);
-
-        // If faculty: update department if provided
-        if (role === 'faculty' && department) {
-            const [profile] = await conn.query('SELECT id FROM faculty_profiles WHERE user_id = ? LIMIT 1', [id]);
-            if (profile.length) {
-                await conn.query('UPDATE faculty_profiles SET department = ? WHERE user_id = ?', [department, id]);
-            } else {
-                await conn.query(
-                    'INSERT INTO faculty_profiles (user_id, department, bio, consultation_mode) VALUES (?, ?, ?, ?)',
-                    [id, department, 'New faculty member.', 'In-Person']
-                );
-            }
-        }
-
-        await conn.commit();
-        conn.release();
-        req.flash('success', `User "${full_name}" updated successfully.`);
-    } catch (err) {
-        await conn.rollback();
-        conn.release();
-        console.error(err);
-        req.flash('error', 'Could not update user.');
-    }
-
-    res.redirect('/admin/dashboard');
+    res.setHeader('Content-Disposition', 'attachment; filename="faculty-report.csv"');
+    res.send(csvString);
 });
 
 module.exports = router;

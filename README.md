@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Faculink — Faculty Consultation Booking System
 
 A web-based consultation booking platform for universities built with **Node.js + Express** and **MySQL**. Students book consultations with professors, faculty manage their availability, and admins oversee the system.

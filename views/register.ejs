@@ -28,11 +28,6 @@
             <form method="post" action="/register" class="stack">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 
-            <% if (errors && errors.length) { %>
-                <div class="alert alert-error"><ul><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul></div>
-            <% } %>
-            <form method="post" action="/register" class="stack">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <label class="field">
                     <span>Full name</span>
                     <input type="text" name="full_name" maxlength="100" required value="<%= old.full_name || '' %>" placeholder="Juan Dela Cruz">
@@ -47,23 +42,19 @@
                     <label class="field">
                         <span>Password</span>
                         <div class="password-wrap">
-                            <input type="password" name="password" id="regPassword" required
-                               placeholder="Enter your password" minlength="8" required>
-                            <button type="button" class="password-toggle" onclick="togglePassword('regPassword', this)">👁</button>
+                            <input type="password" name="password" id="regPassword" required placeholder="Enter your password" minlength="8">
+                            <button type="button" class="password-toggle" id="togglePassBtn">👁</button>
                         </div>
-                        <!-- PASSWORD STRENGTH METER -->
                         <div id="password-strength" style="font-size: 0.75rem; margin-top: 4px; color: var(--muted);">
                             Strength: <span id="strength-text" style="font-weight: bold;">None</span>
                         </div>
                     </label>
                     
-                    </label>
                     <label class="field">
                         <span>Confirm password</span>
                         <div class="password-wrap">
-                            <input type="password" name="password_confirm" id="regPasswordConfirm" required
-                               placeholder="Confirm your password" minlength="8" required>
-                            <button type="button" class="password-toggle" onclick="togglePassword('regPasswordConfirm', this)">👁</button>
+                            <input type="password" name="password_confirm" id="regPasswordConfirm" required placeholder="Confirm your password" minlength="8">
+                            <button type="button" class="password-toggle" id="togglePassConfirmBtn">👁</button>
                         </div>
                     </label>
                 </div>
@@ -75,10 +66,6 @@
             
             <p class="auth-foot">Already have an account? <a href="/login" class="auth-link">Sign in</a></p>
             
-                <button type="submit" class="btn btn-primary btn-block btn-lg">Create account</button>
-            </form>
-            <div class="auth-divider"><span>or</span></div>
-            <p class="auth-foot">Already have an account? <a href="/login" class="auth-link">Sign in</a></p>
             <div class="demo-box demo-box-note">
                 <strong>Faculty or admin?</strong>
                 <p class="muted small" style="margin:.3rem 0 .75rem">
@@ -92,45 +79,56 @@
     </section>
 </div>
 
-<!-- SCRIPTS FOR TOGGLE AND STRENGTH METER -->
 <script>
-    // 1. Toggle Password Visibility
-    function togglePassword(id, btn) {
-        var inp = document.getElementById(id);
-        if (!inp) return;
-        if (inp.type === 'password') {
-            inp.type = 'text';
-            btn.classList.add('is-visible');
-        } else {
-            inp.type = 'password';
-            btn.classList.remove('is-visible');
-        }
-    }
-
-    // 2. Password Strength Meter Logic
     document.addEventListener('DOMContentLoaded', function() {
-        const passwordInput = document.getElementById('regPassword');
-        const strengthText = document.getElementById('strength-text');
+        var togglePassBtn = document.getElementById('togglePassBtn');
+        var togglePassConfirmBtn = document.getElementById('togglePassConfirmBtn');
+        var passInput = document.getElementById('regPassword');
+        var passConfirmInput = document.getElementById('regPasswordConfirm');
+        var strengthText = document.getElementById('strength-text');
 
-        if (passwordInput) {
-            passwordInput.addEventListener('input', function(e) {
-                const password = e.target.value;
+        if (togglePassBtn) {
+            togglePassBtn.addEventListener('click', function() {
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    togglePassBtn.classList.add('is-visible');
+                } else {
+                    passInput.type = 'password';
+                    togglePassBtn.classList.remove('is-visible');
+                }
+            });
+        }
+
+        if (togglePassConfirmBtn) {
+            togglePassConfirmBtn.addEventListener('click', function() {
+                if (passConfirmInput.type === 'password') {
+                    passConfirmInput.type = 'text';
+                    togglePassConfirmBtn.classList.add('is-visible');
+                } else {
+                    passConfirmInput.type = 'password';
+                    togglePassConfirmBtn.classList.remove('is-visible');
+                }
+            });
+        }
+
+        if (passInput && strengthText) {
+            passInput.addEventListener('input', function(e) {
+                var password = e.target.value;
                 
                 if (password.length === 0) {
                     strengthText.textContent = 'None';
                     strengthText.style.color = 'gray';
                 } else if (password.length < 6) {
                     strengthText.textContent = 'Weak';
-                    strengthText.style.color = '#a4262c'; // Red
+                    strengthText.style.color = '#a4262c';
                 } else if (password.length < 10) {
                     strengthText.textContent = 'Medium';
-                    strengthText.style.color = '#9a6700'; // Orange/Yellow
+                    strengthText.style.color = '#9a6700';
                 } else {
                     strengthText.textContent = 'Strong';
-                    strengthText.style.color = '#1c7c54'; // Green
+                    strengthText.style.color = '#1c7c54';
                 }
             });
         }
     });
 </script>
-</div>

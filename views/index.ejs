@@ -1,159 +1,60 @@
-<section class="hero-banner">
-    <div class="hero-banner-inner">
-        <div class="hero-copy">
-            <span class="hero-eyebrow">Faculty Consult</span>
-            <h1 class="hero-title">Book a consultation with your professor</h1>
-            <p class="hero-desc">Browse faculty availability, pick a slot that fits your schedule.</p>
-        </div>
-        <div class="hero-stats">
-            <div class="hero-stat">
-                <span class="hero-stat-value"><%= facultyList.length %></span>
-                <span class="hero-stat-label">Faculty</span>
-            </div>
-            <div class="hero-stat">
-                <span class="hero-stat-value"><%= departments.length %></span>
-                <span class="hero-stat-label">Departments</span>
-            </div>
-        </div>
-    </div>
-</section>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %> — Faculink</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body>
+    <%- include('partials/header') %>
 
-<form class="filters filters-modern" method="get" action="/">
-    <div class="filter-row">
-        <label class="filter-field filter-search">
-            <input type="search" name="q" value="<%= q %>" placeholder="Search by name, department, or expertise…">
-        </label>
-        <label class="filter-field">
-            <select name="dept">
-                <option value="">All departments</option>
-                <% departments.forEach(d => { %>
-                    <option value="<%= d %>" <%= dept === d ? 'selected' : '' %>><%= d %></option>
-                <% }) %>
-            </select>
-        </label>
-        <label class="filter-field">
-            <select name="mode">
-                <option value="">Any mode</option>
-                <% ['In-Person','Online','Hybrid'].forEach(m => { %>
-                    <option value="<%= m %>" <%= mode === m ? 'selected' : '' %>><%= m %></option>
-                <% }) %>
-            </select>
-        </label>
-        <div class="filter-actions">
-            <button type="submit" class="btn btn-primary">Apply</button>
-        </div>
-    </div>
-</form>
+    <% if (locals.isAuthPage) { %>
+        <%- body %>
+    <% } else { %>
+        <main class="container page">
+            <%- body %>
+        </main>
+    <% } %>
 
-<p class="result-count">Showing <strong><%= facultyList.length %></strong> faculty</p>
+    <%- include('partials/footer') %>
 
-<% if (!facultyList.length) { %>
-    <div class="empty">
-        <h3>No faculty match your filters</h3>
-        <p>Try widening your search.</p>
-    </div>
-<% } else { %>
-    <div class="faculty-grid">
-        <% facultyList.forEach(f => {
-            const slots = schedulesByFaculty[f.id] || [];
-            const modeClass = f.consultation_mode === 'Online' ? 'mode-online'
-                            : f.consultation_mode === 'Hybrid' ? 'mode-hybrid'
-                            : 'mode-inperson';
-        %>
-            <article class="faculty-card faculty-card-v2"
-                     data-faculty-id="<%= f.id %>"
-                     data-faculty-name="<%= f.full_name %>">
-                <div class="card-accent <%= modeClass %>"></div>
-                <header class="card-head">
-                    <div class="avatar"><%= f.full_name.replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i,'').split(/\s+/).slice(0,2).map(n => n[0]).join('').toUpperCase() %></div>
-                    <div class="card-identity">
-                        <h2 class="card-name"><%= f.full_name %></h2>
-                        <p class="card-dept"><%= f.department %></p>
-                    </div>
-                    <% if (slots.length > 0) { %>
-                        <span class="card-availability"><span class="card-availability-dot"></span>Available</span>
-                    <% } else { %>
-                        <span class="card-availability card-availability-busy">Unavailable</span>
-                    <% } %>
-                </header>
-                <div class="card-badges">
-                    <span class="badge <%= modeClass %>"><%= f.consultation_mode %></span>
-                    <% if (slots.length > 0) { %>
-                        <span class="badge badge-slots"><%= slots.length %> slot<%= slots.length === 1 ? '' : 's' %></span>
-                    <% } %>
-                </div>
-                <% if (f.office_location) { %>
-                    <p class="card-meta">📍 <%= f.office_location %></p>
-                <% } %>
-                <% if (f.bio) { %>
-                    <p class="card-bio"><%= f.bio.length > 130 ? f.bio.slice(0,130) + '…' : f.bio %></p>
-                <% } %>
-                <div class="card-foot">
-                    <% if (user && user.role === 'student') { %>
-                        <button type="button" class="btn btn-primary js-book" data-faculty-id="<%= f.id %>">Book consultation</button>
-                    <% } else if (!user) { %>
-                        <a class="btn btn-primary" href="/login">Log in to book</a>
-                    <% } else { %>
-                        <button class="btn btn-disabled" disabled>Students only</button>
-                    <% } %>
-                </div>
-            </article>
-        <% }) %>
-    </div>
-<% } %>
+    <span id="flash-success" style="display:none;"><%= typeof success !== 'undefined' && success.length > 0 ? success[0] : '' %></span>
+    <span id="flash-error" style="display:none;"><%= typeof error !== 'undefined' && error.length > 0 ? error[0] : '' %></span>
 
-<!-- Booking modal -->
-<div class="modal-overlay" id="bookingModal" style="display:none;">
-    <div class="modal">
-        <header class="modal-head">
-            <div>
-                <h2>Request a consultation</h2>
-                <p class="modal-faculty" id="modalFaculty"></p>
-            </div>
-            <button type="button" class="modal-close" onclick="window.closeBookingModal()">&times;</button>
-        </header>
-        <form id="bookingForm" class="modal-body" onsubmit="return window.submitBooking(event);">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <input type="hidden" name="faculty_id" id="facultyId">
-            <input type="hidden" name="schedule_id" id="scheduleId">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var successSpan = document.getElementById('flash-success');
+            var errorSpan = document.getElementById('flash-error');
 
-            <div class="modal-section">
-                <h3 class="modal-label">1. Pick a time slot</h3>
-                <div class="slot-list" id="slotList"></div>
-            </div>
-            <div class="modal-section">
-                <h3 class="modal-label">2. Confirm the date</h3>
-                <label class="field">
-                    <span>Date</span>
-                    <input type="date" name="booking_date" id="bookingDate" required>
-                </label>
-            </div>
-            <div class="modal-section">
-                <h3 class="modal-label">3. Tell them why</h3>
-                <label class="field">
-                    <span>Purpose <em>(required, max 150 chars)</em></span>
-                    <input type="text" name="purpose" maxlength="150" required>
-                </label>
-                <label class="field">
-                    <span>Additional notes <em>(optional, max 500 chars)</em></span>
-                    <textarea name="notes" rows="3" maxlength="500"></textarea>
-                </label>
-            </div>
-            <div class="form-msg" id="formMsg"></div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-ghost" onclick="window.closeBookingModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="submitBtn">Submit request</button>
-            </div>
-        </form>
-    </div>
-</div>
+            var successMsg = successSpan ? successSpan.textContent.trim() : '';
+            var errorMsg = errorSpan ? errorSpan.textContent.trim() : '';
 
-<!-- Safely pass EJS data to JavaScript without VS Code errors -->
-<script id="schedule-data" type="application/json">
-    <%- JSON.stringify(schedulesByFaculty) %>
-</script>
+            if (successMsg !== '') {
+                Toastify({
+                    text: successMsg,
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "linear-gradient(to right, #00b09b, #96c93d)", zIndex: 9999 }
+                }).showToast();
+            }
 
-<script>
-    var rawScheduleData = document.getElementById('schedule-data').textContent;
-    window.SCHEDULES = JSON.parse(rawScheduleData || '{}');
-</script>
+            if (errorMsg !== '') {
+                Toastify({
+                    text: errorMsg,
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "linear-gradient(to right, #ff5f6d, #ffc371)", zIndex: 9999 }
+                }).showToast();
+            }
+        });
+    </script>
+</body>
+</html>
